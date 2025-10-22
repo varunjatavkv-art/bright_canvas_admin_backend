@@ -7,7 +7,8 @@ const Post = require("./models/post");
 const Work = require("./models/work");
 const cors = require("cors");
 // create Invoice
-const {createInvoice}  = require("./createInvoice");
+const { createInvoice }  = require("./createInvoice");
+const { addInvoiceRouter } = require("./routes/invoiceRouter");
 
 const app = express();
 
@@ -213,6 +214,9 @@ app.delete("/api/work/:id", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// post invoice data
+app.post("api/invoice", addInvoiceRouter);
 
 const invoice = {
   shipping: {
