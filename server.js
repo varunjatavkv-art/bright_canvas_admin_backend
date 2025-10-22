@@ -6,6 +6,8 @@ const db = require("./db");
 const Post = require("./models/post");
 const Work = require("./models/work");
 const cors = require("cors");
+// create Invoice
+const {createInvoice}  = require("./createInvoice");
 
 const app = express();
 
@@ -212,7 +214,35 @@ app.delete("/api/work/:id", async (req, res) => {
   }
 });
 
+const invoice = {
+  shipping: {
+    name: 'John Doe',
+    address: '1234 Main Street',
+    city: 'San Francisco',
+    state: 'CA',
+    country: 'US',
+    postal_code: 94111,
+  },
+  items: [
+    {
+      item: 'TC 100',
+      description: 'Toner Cartridge',
+      quantity: 2,
+      amount: 6000,
+    },
+    {
+      item: 'USB_EXT',
+      description: 'USB Cable Extender',
+      quantity: 1,
+      amount: 2000,
+    },
+  ],
+  subtotal: 8000,
+  paid: 0,
+  invoice_nr: 1234,
+};
 
+createInvoice(invoice, 'invoice_pdf/invoice.pdf');
 
 const PORT = process.env.PORT || 8000;
 
