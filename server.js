@@ -1,16 +1,22 @@
-const express = require("express");
-const path = require("path");
-const multer = require("multer");
-const fs = require("fs");
-const db = require("./db");
-const Post = require("./models/post");
-const Work = require("./models/work");
-const cors = require("cors");
+import express from "express";
+import path from "path";
+import multer from "multer";
+import fs from "fs";
+import db from "./db.js";
+import Post from "./models/post.js";
+import Work from "./models/work.js";
+import cors from "cors";
 // create Invoice
-const { createInvoice }  = require("./createInvoice");
-const { addInvoiceRouter } = require("./routes/invoiceRouter");
+import { createInvoice }  from "./createInvoice.js";
+import  InvoiceRouter from "./routes/invoiceRouter.js";
+import { fileURLToPath } from "url";
 
 const app = express();
+
+// 1. Get the current file path (fileURL)
+const __filename = fileURLToPath(import.meta.url);
+// 2. Get the directory name from the file path
+const __dirname = path.dirname(__filename);
 
 app.use(
   cors({
@@ -216,7 +222,7 @@ app.delete("/api/work/:id", async (req, res) => {
 });
 
 // post invoice data
-app.post("api/invoice", addInvoiceRouter);
+app.use("/api/invoice", InvoiceRouter);
 
 const invoice = {
   shipping: {

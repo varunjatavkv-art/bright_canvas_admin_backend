@@ -1,8 +1,10 @@
 import express from "express";
-import { addInvoice } from "../controller/invoiceController.js";
+import { addInvoice, getInvoice } from "../controller/invoiceController.js";
 
-const addInvoiceRouter = express.Router();
+const InvoiceRouter = express.Router();
 
-addInvoiceRouter.post('', addInvoice);
 
-export default addInvoiceRouter;
+InvoiceRouter.post('', addInvoice);
+InvoiceRouter.get('', getInvoice);
+
+export default InvoiceRouter;
