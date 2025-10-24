@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const WorkSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
@@ -9,4 +9,4 @@ const WorkSchema = new mongoose.Schema({
   edited__at: { type: Date, default: null }
 });
 
-module.exports = mongoose.model('Work', WorkSchema);
+export const Work = mongoose.model('Work', WorkSchema);

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import  mongoose from 'mongoose';
 
 const PostSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
@@ -8,4 +8,4 @@ const PostSchema = new mongoose.Schema({
   edited_at: { type: Date, default: null }
 });
 
-module.exports = mongoose.model('Post', PostSchema);
+export const Post = mongoose.model('Post', PostSchema);

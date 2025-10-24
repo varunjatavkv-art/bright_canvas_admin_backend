@@ -1,6 +1,6 @@
-const invoice = require("../models/invoice");
+import {invoice} from "../models/invoice.js";
 
-const addInvoice = async (req,res) => {
+export const addInvoice = async (req,res) => {
   try {
     const doc = await invoice.create(
         req.body
@@ -12,7 +12,7 @@ const addInvoice = async (req,res) => {
   }
 }
 
-const getInvoice = async(req,res) => {
+export const getInvoice = async(req,res) => {
 
     try {
         const {  page = 1, limit = 10, search = '', status = ""} = req.query;
@@ -65,4 +65,19 @@ const getInvoice = async(req,res) => {
         res.status(400).json({ error: error.message });
     }
 }
-module.exports = { addInvoice , getInvoice };
+
+export const deleteInvoice = async (req,res) => {
+  try {
+    const result = await invoice.deleteOne({ _id: req.params.id });
+    if(result.deleteCount === 0){
+      // res.status(200).json({message: "Invoice Deleted Successfully"});
+      console.log("Invoice not found");
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    console.log("Invoice deleted successfully");
+    res.status(200).json({ message: "Invoice deleted successfully" });
+  } catch (error) {
+    console.error("Deletion error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+}

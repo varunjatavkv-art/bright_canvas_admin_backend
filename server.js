@@ -2,9 +2,9 @@ import express from "express";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
-import db from "./db.js";
-import Post from "./models/post.js";
-import Work from "./models/work.js";
+import {db} from "./db.js";
+import {Post} from "./models/post.js";
+import {Work} from "./models/work.js";
 import cors from "cors";
 // create Invoice
 import { createInvoice }  from "./createInvoice.js";
@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["POST", "GET", "PUT", "DELETE"], // Add other methods you might need
+    methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"], // Add other methods you might need
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -221,7 +221,7 @@ app.delete("/api/work/:id", async (req, res) => {
   }
 });
 
-// post invoice data
+// invoice router
 app.use("/api/invoice", InvoiceRouter);
 
 const invoice = {

@@ -1,7 +1,7 @@
-const fs = require('fs');
-const PDFDocument = require('pdfkit');
+import fs from 'fs';
+import PDFDocument from 'pdfkit';
 
-// --- CONSTANTS ---
+// --- IMPORTANTS ---
 const MARGIN = 50;
 const PAGE_WIDTH = 612; // A4 width in points
 const CONTENT_WIDTH = PAGE_WIDTH - (2 * MARGIN); // 512
@@ -231,7 +231,7 @@ function generateTotals(doc, startY) {
 // ----------------------------------------------------------------------
 // --- 5. MAIN INVOCATION FUNCTION ---
 // ----------------------------------------------------------------------
-function createInvoice(invoice, path) {
+export function createInvoice(invoice, path) {
     // The PDF is white by default (no need to draw a white background)
     let doc = new PDFDocument({ margin: MARGIN });
 
@@ -243,6 +243,3 @@ function createInvoice(invoice, path) {
     doc.end();
 }
 
-module.exports = {
-    createInvoice,
-};

@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import  mongoose from 'mongoose';
 // Load environment variables from .env (if present)
-require('dotenv').config();
+// require('dotenv').config();
+import 'dotenv/config.js';
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://varunjatavkv_db_user:ykFUNNRdhhwUm3yu@photography.yjkmswc.mongodb.net/';
 
@@ -21,4 +22,4 @@ async function connectWithRetry(retries = 0) {
   }
 }
 
-module.exports = { connectWithRetry, mongoose };
+export const db  = { connectWithRetry, mongoose };
