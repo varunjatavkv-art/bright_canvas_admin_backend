@@ -92,3 +92,36 @@ export const getSingleInvoice = async (req,res) => {
     res.status(500).json({ error: error.message });
   }
 }
+
+export const updateInvoice = async (req, res) => {
+  try {
+      // 1. Create the new item object from the request body
+      const newItem = {
+          description: req.body.description,
+          // Assuming the item's ID is passed in req.body.id
+          // If sub-items don't have an 'id', you can remove this line.
+          id: req.body.id, 
+          qty: req.body.qty,
+          serial: req.body.serial,
+          unit: req.body.unit,
+          unitPrice: req.body.unitPrice
+      };
+
+      // 2. Use $push to add the new item to the 'items' array
+      const result = await invoice.updateOne(
+          { _id: req.params.id },  // Filter to find the invoice
+          { $set: { items: newItem } }, // Update operation
+          { upsert: true }
+      );
+
+      // 3. Correctly check if the invoice was found
+      if (result.matchedCount === 0) {
+          console.log("Invoice not found for updation");
+          return res.status(404).json({ error: "No single Invoice is found for updation" });
+      }
+
+      res.status(200).json({ message: "Invoice Updated", data: result });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
