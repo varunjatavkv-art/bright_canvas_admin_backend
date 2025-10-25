@@ -92,19 +92,12 @@ export const getSingleInvoice = async (req, res) => {
 };
 
 export const updateInvoice = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   try {
     // 1. Create the new item object from the request body
-    const newItem = {
-      description: req.body.items.description,
-      // Assuming the item's ID is passed in req.body.id
-      // If sub-items don't have an 'id', you can remove this line.
-      id: req.body.items.id,
-      qty: req.body.items.qty,
-      serial: req.body.items.serial,
-      unit: req.body.items.unit,
-      unitPrice: req.body.items.unitPrice,
-    };
+
+    const updatedItemsArray = req.body.items;
+    
     const newCustomer = {
       name: req.body.customer.name,
       address: req.body.customer.address,
@@ -130,7 +123,7 @@ export const updateInvoice = async (req, res) => {
       {
         $set: {
           customer: newCustomer,
-          items: newItem,
+          items: updatedItemsArray,
           summary: newSummary,
           metadata: newMetaData,
         },

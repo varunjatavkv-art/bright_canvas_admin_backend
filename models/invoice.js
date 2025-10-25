@@ -18,7 +18,7 @@ const invoiceSchema = mongoose.Schema({
                 type: String, required: true, default: ''
             },
             id: {
-                type: String, required: true, default: ''
+                type: String, required: false, default: ''
             },
             qty: {
                 type: Number, required: true, default: 1
