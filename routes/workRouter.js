@@ -1,71 +1,75 @@
 import express from "express";
-import { Post } from "../models/post.js";
 import path from "path";
-import { upload } from "../multer/blog_multer.js";
+import { Work } from "../models/work.js";
+import { work } from "../multer/work_multer.js";
 import { fileURLToPath } from "url";
-const blogRouter = express.Router();
+
+const workRouter = express.Router();
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-blogRouter.post("", upload.single("image"), async (req, res) => {
+workRouter.post("", work.single("image"), async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, service } = req.body;
     if (!title) {
       return res.status(400).json({ error: "title is required" });
     }
-    if (!req.file && !req.file.path) {
+    if (!req.file) {
       return res
         .status(400)
         .json({ error: "image is required and must be jpg/jpeg/png" });
     }
+
     const imagePath = path.relative(__dirname, req.file.path);
     const createdAt = new Date();
-    
-    const doc = await Post.create({
+
+    const doc = await Work.create({
       title,
       description: description || "",
+      service: service || "",
       image_path: imagePath,
       created_at: createdAt,
     });
 
     res.status(201).json(doc);
   } catch (err) {
+    console.log("error: ", err);
     res.status(400).json({ error: err.message });
   }
 });
 
-blogRouter.get("", async (req, res) => {
+workRouter.get("", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ created_at: -1 });
-    res.json(posts);
+    const works = await Work.find().sort({ created_at: -1 });
+    res.json(works);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-})
+});
 
-blogRouter.get("/:id", async (req, res) => {
+workRouter.get("/:id", async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+    const work = await Work.findById(req.params.id);
+    if (!work) {
+      return res.status(404).json({ error: "Work not found" });
     }
-    res.json(post);
+    res.json(work);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-})
+});
 
-
-blogRouter.delete("/:id", async (req, res) => {
+workRouter.delete("/:id", async (req, res) => {
   try {
-    const result = await Post.deleteOne({ _id: req.params.id });
+    const result = await Work.deleteOne({ _id: req.params.id });
     if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "Blog not found" });
+      return res.status(404).json({ error: "Work not found" });
     }
-    res.status(200).json({ message: "Blog deleted successfully" });
+    res.status(200).json({ message: "Work deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-export default blogRouter;
+export default workRouter;
