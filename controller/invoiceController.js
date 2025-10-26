@@ -16,6 +16,18 @@ if (!fs.existsSync(INVOICE_DIR)) fs.mkdirSync(INVOICE_DIR, { recursive: true });
 
 export const addInvoice = async (req, res) => {
   try {
+    if(req.body.summary.status === "-1"){
+      return res.status(400).json({error: "Please choose valid status"})
+    }
+  const hasInvalidUnit = req.body.items.some(item => item.unit === "-1");
+
+  if (hasInvalidUnit) {
+      return res.status(400).json({ error: "Please choose valid unit for all items" });
+  }
+  
+  if (!req.body.items || req.body.items.length === 0) {
+      return res.status(400).json({ error: "Invoice must contain at least one item" });
+  }
     const doc = await invoice.create(req.body);
     res.status(201).json(doc);
   } catch (error) {
