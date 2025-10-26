@@ -1,3 +1,4 @@
+import { createInvoice } from "../createInvoice.js";
 import { invoice } from "../models/invoice.js";
 
 export const addInvoice = async (req, res) => {
@@ -84,8 +85,10 @@ export const getSingleInvoice = async (req, res) => {
     if (!result) {
       console.log("Invoice not found");
       return res.status(404).json({ error: "No single Invoice is found" });
-    }
+    };
+    createInvoice(result,`./invoice_pdf/invoice_${result?.metadata?.invoiceNumber}.pdf`)
     res.status(200).json({ message: "Got single Invoice", data: result });
+   
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

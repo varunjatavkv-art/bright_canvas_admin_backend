@@ -1,54 +1,80 @@
 import fs from 'fs';
 import PDFDocument from 'pdfkit';
+import { formatDate } from './commonFunction/common.functions.js';
 
-// --- IMPORTANTS ---
+// --- CONSTANTS & HELPERS ---
 const MARGIN = 50;
 const PAGE_WIDTH = 612; // A4 width in points
 const CONTENT_WIDTH = PAGE_WIDTH - (2 * MARGIN); // 512
-const TEXT_COLOR = '#2e2e2e'; 
+const TEXT_COLOR = '#2e2e2e';
+const CURRENCY_SYMBOL = ''; 
+
+// Helper to format currency
+const formatCurrency = (amount) => {
+    // Safely convert to a number, stripping non-numeric chars except '.'
+    const num = Number(String(amount).replace(/[^0-9.]/g, '')) || 0;
+    return `${CURRENCY_SYMBOL}${num.toFixed(2)}`; 
+};
+
+// Helper for status text
+const getStatusText = (status) => {
+    return status === "0" ? "Pending" : (status === "1" ? "Paid" : "N/A");
+};
+
+
+// ----------------------------------------------------------------------
+// --- 5. MAIN INVOCATION FUNCTION ---
+// ----------------------------------------------------------------------
+export function createInvoice(invoice, path) {
+    let doc = new PDFDocument({ margin: MARGIN });
+    doc.pipe(fs.createWriteStream(path));
+    drawInvoiceContent(doc, invoice); 
+    doc.end();
+}
 
 // --- HELPER FUNCTION: Main Content Drawer ---
-function drawInvoiceContent(doc) {
+function drawInvoiceContent(doc, invoice) {
     let currentY = MARGIN; 
     
-    // Set text color and default font
     doc.fillColor(TEXT_COLOR);
     doc.font('Helvetica');
 
-    // Draw sections sequentially, updating Y position
-    currentY = generateHeader(doc, currentY); 
-    currentY = generateCustomerInfo(doc, currentY);
-    currentY = generateInvoiceTable(doc, currentY);
-
-    // Totals are drawn at the end of the content
-    generateTotals(doc, currentY);
+    currentY = generateHeader(doc, currentY, invoice); 
+    currentY = generateCustomerInfo(doc, currentY, invoice);
+    currentY = generateInvoiceTable(doc, currentY, invoice);
+    generateTotals(doc, currentY, invoice);
 }
 
 // ----------------------------------------------------------------------
-// --- 1. HEADER SECTION (Invoice #, Dates, Company Info) ---
+// --- 1. HEADER SECTION (Fixed Company Text Overrun) ---
 // ----------------------------------------------------------------------
-function generateHeader(doc, startY) {
+function generateHeader(doc, startY, invoice) {
     let currentY = startY; 
     const rightX = MARGIN + CONTENT_WIDTH;
+    
+    // FIX: Increased horizontal adjustment to prevent text overrun
+    const RIGHT_ADJUSTMENT = 120; 
 
-    // --- LEFT SIDE: Invoice #, Dates ---
+    // DYNAMIC INVOICE ID
+    const invoiceNum = invoice?.metadata?.invoiceNumber || invoice?._id?.toString().substring(0, 8) || 'N/A';
     doc.fontSize(16)
        .font('Helvetica-Bold')
-       .text(`Invoice #${3492}`, MARGIN, currentY);
+       .text(`Invoice #${invoiceNum}`, MARGIN, currentY);
 
-    currentY += 20; // Move down
+    currentY += 20;
 
+    // DYNAMIC DATES
     doc.fontSize(10)
        .font('Helvetica')
-       .text(`Date Issued: ${'25/08/2020'}`, MARGIN, currentY)
-       .text(`Date Due: ${'29/08/2020'}`, MARGIN, currentY + 15);
+       .text(`Date Issued: ${formatDate(invoice?.metadata?.issueDate) || 'N/A'}`, MARGIN, currentY)
+       .text(`Date Due: ${formatDate(invoice?.metadata?.dueDate) || 'N/A'}`, MARGIN, currentY + 15);
     
-    // --- RIGHT SIDE: Company Address/Contact ---
+    // --- RIGHT SIDE: Company Info (FIXED POSITION) ---
     doc.fontSize(10)
-       .text('4517 Washington Ave. Manchester, Kentucky 39495', rightX, startY, { align: 'right' })
-       .text('random@gmail.com, +1 543 2198', rightX, startY + 15, { align: 'right' });
+       // The x-position (rightX - RIGHT_ADJUSTMENT) pulls the right edge of the text 20 points left.
+       .text('Bright Canvas', rightX - RIGHT_ADJUSTMENT, startY, { align: 'right' })
+       .text('bright.canvas@gmail.com, +1 543 2198', rightX - RIGHT_ADJUSTMENT, startY + 15, { align: 'right' });
 
-    // Draw a separator line
     currentY += 40;
     doc.strokeColor("#aaaaaa")
        .lineWidth(1)
@@ -56,77 +82,60 @@ function generateHeader(doc, startY) {
        .lineTo(rightX, currentY)
        .stroke();
     
-    // Return the new Y position for the next section
-    return currentY + 20; // Extra space after header
+    return currentY + 20;
 }
 
 // ----------------------------------------------------------------------
-// --- 2. CUSTOMER INFO SECTION ("Issue For") ---
-// ----------------------------------------------------------------------
-function generateCustomerInfo(doc, startY) {
+function generateCustomerInfo(doc, startY ,invoice) {
     let currentY = startY; 
     const LEFT_COL_X = MARGIN; 
-    const RIGHT_COL_X = MARGIN + CONTENT_WIDTH / 2;
-    const VALUE_OFFSET = 80; // Distance to push values from their labels
+    const RIGHT_COL_X = MARGIN + CONTENT_WIDTH / 2 + 150;
+    const VALUE_OFFSET = 80;
     const LINE_HEIGHT = 15;
 
-    // --- Draw the "Issue For" Box/Title ---
-    doc.fontSize(12)
-       .font('Helvetica-Bold')
-       .text('Issue For:', LEFT_COL_X, currentY);
-
-    currentY += 20; // Move down after title
-
-    // Reset font to regular for details
+    doc.fontSize(12).font('Helvetica-Bold').text('Issue For:', LEFT_COL_X, currentY);
+    currentY += 20;
     doc.fontSize(10).font('Helvetica');
 
-    // --- LEFT COLUMN: Name, Address, Phone ---
+    // DYNAMIC LEFT COLUMN (using optional chaining)
     doc.text('Name:', LEFT_COL_X, currentY);
-    doc.text(':Will Marthas', LEFT_COL_X + VALUE_OFFSET, currentY); 
+    doc.text(invoice?.customer?.name || 'N/A', LEFT_COL_X + VALUE_OFFSET, currentY); 
 
     doc.text('Address:', LEFT_COL_X, currentY + LINE_HEIGHT);
-    doc.text(':4517 Washington Ave.USA', LEFT_COL_X + VALUE_OFFSET, currentY + LINE_HEIGHT);
+    doc.text(invoice?.customer?.address || 'N/A', LEFT_COL_X + VALUE_OFFSET, currentY + LINE_HEIGHT);
 
     doc.text('Phone Number:', LEFT_COL_X, currentY + (LINE_HEIGHT * 2));
-    doc.text(':+1 543 2198', LEFT_COL_X + VALUE_OFFSET, currentY + (LINE_HEIGHT * 2));
+    doc.text(invoice?.customer?.phone || 'N/A', LEFT_COL_X + VALUE_OFFSET, currentY + (LINE_HEIGHT * 2));
 
-
-    // --- RIGHT COLUMN: Issue Date, Order ID, Shipment ID ---
+    // DYNAMIC RIGHT COLUMN (using optional chaining)
     let rightY = currentY;
-    const RIGHT_VALUE_OFFSET = 60; // Less offset on the right
+    const RIGHT_VALUE_OFFSET = 60;
 
-    doc.text('Issue Date:', RIGHT_COL_X, rightY);
-    doc.text(':25 Jan 2024', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY);
+    doc.text('Status:', RIGHT_COL_X, rightY);
+    doc.text(getStatusText(invoice?.summary?.status), RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY);
 
     doc.text('Order ID:', RIGHT_COL_X, rightY + LINE_HEIGHT);
-    doc.text(':#653214', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + LINE_HEIGHT);
+    doc.text(invoice?.metadata?.orderID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + LINE_HEIGHT);
 
     doc.text('Shipment ID:', RIGHT_COL_X, rightY + (LINE_HEIGHT * 2));
-    doc.text(':#985215', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + (LINE_HEIGHT * 2));
+    doc.text(invoice?.metadata?.shipmentID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + (LINE_HEIGHT * 2));
 
-
-    // Advance the Y position past this section
     currentY += (LINE_HEIGHT * 3) + 20; 
-
-    // Draw a separator line
     doc.strokeColor("#aaaaaa")
        .lineWidth(1)
        .moveTo(MARGIN, currentY)
        .lineTo(MARGIN + CONTENT_WIDTH, currentY)
        .stroke();
 
-    return currentY + 20; // Extra space before table
+    return currentY + 20;
 }
 
 // ----------------------------------------------------------------------
-// --- 3. INVOICE TABLE SECTION (Items List) ---
-// ----------------------------------------------------------------------
-function generateInvoiceTable(doc, startY) {
+function generateInvoiceTable(doc, startY, invoice) {
     let currentY = startY;
     const HEADER_Y = currentY;
     const LINE_HEIGHT = 20;
 
-    // Define the X-coordinates for the columns
     const columns = {
         SL: MARGIN + 5,
         Items: MARGIN + 40,
@@ -138,9 +147,7 @@ function generateInvoiceTable(doc, startY) {
     const PRICE_WIDTH = 50; 
 
     // --- TABLE HEADER ---
-    doc.font('Helvetica-Bold')
-       .fontSize(10);
-    
+    doc.font('Helvetica-Bold').fontSize(10);
     doc.text('SL.', columns.SL, HEADER_Y);
     doc.text('Items', columns.Items, HEADER_Y);
     doc.text('Qty', columns.Qty, HEADER_Y, { width: PRICE_WIDTH, align: 'right' });
@@ -148,98 +155,131 @@ function generateInvoiceTable(doc, startY) {
     doc.text('Unit Price', columns.UnitPrice, HEADER_Y, { width: PRICE_WIDTH, align: 'right' });
     doc.text('Price', columns.Price, HEADER_Y, { width: PRICE_WIDTH, align: 'right' });
 
-    currentY += LINE_HEIGHT;
+    currentY += LINE_HEIGHT + 5; 
+    doc.strokeColor("#aaaaaa").lineWidth(1).moveTo(MARGIN, currentY).lineTo(MARGIN + CONTENT_WIDTH, currentY).stroke();
+    currentY += 5;
 
-    // Draw the line under the header
-    doc.strokeColor("#aaaaaa")
-       .lineWidth(1)
-       .moveTo(MARGIN, currentY)
-       .lineTo(MARGIN + CONTENT_WIDTH, currentY)
-       .stroke();
-
-    currentY += 5; // Small buffer
-
-    // --- TABLE ROWS (Example Data from UI) ---
+    // --- TABLE ROWS (DYNAMIC) ---
     doc.font('Helvetica').fontSize(10);
-
-    const items = [
-        { sl: '01', item: "Apple's Shoes", qty: 5, unit: 'PC', unitPrice: '$200', price: '$1000.00' },
-        { sl: '02', item: "Apple's Shoes", qty: 5, unit: 'PC', unitPrice: '$200', price: '$1000.00' },
-        { sl: '03', item: "Apple's Shoes", qty: 5, unit: 'PC', unitPrice: '$200', price: '$1000.00' },
-        { sl: '04', item: "Apple's Shoes", qty: 5, unit: 'PC', unitPrice: '$200', price: '$1000.00' },
-    ];
     
-    items.forEach((item) => {
+    (invoice.items || []).forEach((item) => {
+        // Calculate Line Item Total
+        const unitPriceNum = Number(String(item.unitPrice).replace(/[^0-9.]/g, '')) || 0;
+        const qtyNum = Number(item.qty) || 0;
+        const lineItemTotal = formatCurrency(unitPriceNum * qtyNum); 
+
+        // Use optional chaining for individual item properties
+        doc.text(item?.serial || 'N/A', columns.SL, currentY);
+        doc.text(item?.description || 'N/A', columns.Items, currentY);
+        doc.text(item?.qty || '0', columns.Qty, currentY, { width: PRICE_WIDTH, align: 'right' });
+        doc.text(item?.unit || 'N/A', columns.Units, currentY);
         
-        doc.text(item.sl, columns.SL, currentY);
-        doc.text(item.item, columns.Items, currentY);
-        doc.text(item.qty.toString(), columns.Qty, currentY, { width: PRICE_WIDTH, align: 'right' });
-        doc.text(item.unit, columns.Units, currentY);
-        doc.text(item.unitPrice, columns.UnitPrice, currentY, { width: PRICE_WIDTH, align: 'right' });
-        doc.text(item.price, columns.Price, currentY, { width: PRICE_WIDTH, align: 'right' });
+        // Format Unit Price for display
+        doc.text(formatCurrency(item?.unitPrice), columns.UnitPrice, currentY, { width: PRICE_WIDTH, align: 'right' });
+        
+        // Display the calculated total price
+        doc.text(lineItemTotal, columns.Price, currentY, { width: PRICE_WIDTH, align: 'right' }); 
 
         currentY += LINE_HEIGHT;
     });
 
-    // Final line after the items (for the table bottom)
-    doc.strokeColor("#aaaaaa")
-       .lineWidth(1)
-       .moveTo(MARGIN, currentY)
-       .lineTo(MARGIN + CONTENT_WIDTH, currentY)
-       .stroke();
+    // Final line
+    doc.strokeColor("#aaaaaa").lineWidth(1).moveTo(MARGIN, currentY).lineTo(MARGIN + CONTENT_WIDTH, currentY).stroke();
 
     return currentY + 15; 
 }
 
-
 // ----------------------------------------------------------------------
-// --- 4. TOTALS & FOOTER SECTION ---
 // ----------------------------------------------------------------------
-function generateTotals(doc, startY) {
-    let currentY = startY;
+// --- 4. TOTALS & FOOTER SECTION (FIXED: Added Signatures) ---
+// ----------------------------------------------------------------------
+function generateTotals(doc, startY , invoice) {
+    // We add extra space (e.g., 20) to the starting Y position to separate the totals from the table
+    let currentY = startY + 20; 
     
-    // Position the totals block near the right side
     const LABEL_COL_X = MARGIN + 350; 
     const VALUE_COL_X = MARGIN + 460;
     const PRICE_WIDTH = 60;
+    const LINE_SPACING = 15; // Standard vertical space between total lines
+    const PAGE_BOTTOM_Y = 700; // Fixed Y position for signatures (approx 100 points from bottom)
     
     // --- Sales By: (Left Aligned) ---
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text('Sales By:', MARGIN, currentY);
     doc.font('Helvetica');
-    doc.text('Jammal', MARGIN + 50, currentY);
+    doc.text(invoice?.salesperson || 'Siddhartha', MARGIN + 50, currentY); 
     
-    // --- Subtotal (Right Aligned) ---
+    // --- Totals (Right Aligned) ---
+    currentY += 5; 
+
+    // Subtotal
     doc.font('Helvetica-Bold');
     doc.text('Subtotal:', LABEL_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
     doc.font('Helvetica');
-    doc.text('$4000.00', VALUE_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
+    doc.text(formatCurrency(invoice?.summary?.subtotal), VALUE_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
     
-    currentY += 100; // Skip down to where the footer should be
+    currentY += LINE_SPACING;
+    
+    // Tax
+    doc.font('Helvetica-Bold');
+    doc.text('Tax (18%):', LABEL_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
+    doc.font('Helvetica');
+    doc.text(formatCurrency(invoice?.summary?.tax), VALUE_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
+    
+    currentY += LINE_SPACING; 
+    
+    // Total Separator
+    doc.strokeColor("#000000")
+       .lineWidth(1)
+       .moveTo(LABEL_COL_X, currentY)
+       .lineTo(MARGIN + CONTENT_WIDTH, currentY)
+       .stroke();
+       
+    currentY += 5; 
 
-    // --- Footer ---
-    doc.fontSize(
-        10,
-    ).text(
-        'Payment is due within 15 days. Thank you for your business.',
-        50, // Start X (MARGIN)
-        currentY, // Y Position
+    // Final Total
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Total:', LABEL_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
+    doc.text(formatCurrency(invoice?.summary?.total), VALUE_COL_X, currentY, { width: PRICE_WIDTH, align: 'right' });
+
+    // --- Invoice Notes (Footer Message) ---
+    currentY += 60; // Space below totals
+    doc.fontSize(10).text(
+      invoice?.notes || 'Thankyou for your purchase .',
+        50, 
+        currentY, 
         { align: 'center', width: CONTENT_WIDTH },
     );
-}
-
-// ----------------------------------------------------------------------
-// --- 5. MAIN INVOCATION FUNCTION ---
-// ----------------------------------------------------------------------
-export function createInvoice(invoice, path) {
-    // The PDF is white by default (no need to draw a white background)
-    let doc = new PDFDocument({ margin: MARGIN });
-
-    // Pipe the document to a write stream
-    doc.pipe(fs.createWriteStream(path));
     
-    drawInvoiceContent(doc); // Draw all the content
+    // -----------------------------------------------------
+    // --- SIGNATURE BLOCKS ---
+    // -----------------------------------------------------
+    const LINE_LENGTH = 150;
+    const LEFT_LINE_X = MARGIN;
+    const RIGHT_LINE_X = MARGIN + CONTENT_WIDTH - LINE_LENGTH;
+    const SIGNATURE_TEXT_Y = PAGE_BOTTOM_Y + 5;
 
-    doc.end();
+    // 1. Signature of Customer (Left Side)
+    doc.strokeColor("#000000")
+       .lineWidth(1)
+       .moveTo(LEFT_LINE_X, PAGE_BOTTOM_Y)
+       .lineTo(LEFT_LINE_X + LINE_LENGTH, PAGE_BOTTOM_Y)
+       .stroke();
+       
+    doc.font('Helvetica').fontSize(10).text('Signature of Customer', LEFT_LINE_X, SIGNATURE_TEXT_Y, {
+        width: LINE_LENGTH,
+        align: 'center'
+    });
+
+    // 2. Signature of Authorized (Right Side)
+    doc.strokeColor("#000000")
+       .lineWidth(1)
+       .moveTo(RIGHT_LINE_X, PAGE_BOTTOM_Y)
+       .lineTo(RIGHT_LINE_X + LINE_LENGTH, PAGE_BOTTOM_Y)
+       .stroke();
+
+    doc.font('Helvetica').fontSize(10).text('Signature of Authorized', RIGHT_LINE_X, SIGNATURE_TEXT_Y, {
+        width: LINE_LENGTH,
+        align: 'center'
+    });
 }
-

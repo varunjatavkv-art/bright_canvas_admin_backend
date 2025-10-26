@@ -71,7 +71,7 @@ const invoice = {
   invoice_nr: 1234,
 };
 
-createInvoice(invoice, 'invoice_pdf/invoice.pdf');
+// createInvoice(invoice, 'invoice_pdf/invoice.pdf');
 
 const PORT = process.env.PORT || 8000;
 
