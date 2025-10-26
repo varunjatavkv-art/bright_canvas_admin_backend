@@ -1,5 +1,18 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import { createInvoice } from "../createInvoice.js";
 import { invoice } from "../models/invoice.js";
+import fs from "fs";
+
+
+// 1. Get the current file path (fileURL)
+const __filename = fileURLToPath(import.meta.url);
+// 2. Get the directory name from the file path
+const __dirname = path.dirname(__filename);
+
+
+export const INVOICE_DIR = path.join(__dirname, "../invoice_pdf");
+if (!fs.existsSync(INVOICE_DIR)) fs.mkdirSync(INVOICE_DIR, { recursive: true });
 
 export const addInvoice = async (req, res) => {
   try {
@@ -147,3 +160,16 @@ export const updateInvoice = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+export const downloadInvoice = (req, res) => {
+  const fileName = req.params.filename;
+  const filePath = path.join(INVOICE_DIR, fileName);
+
+  // CRITICAL FIX: Set Content-Disposition header to 'attachment'
+  res.download(filePath, (err) => {
+      if (err) {
+          // Handle error, file might not exist
+          console.error("Error downloading file:", err);
+          res.status(404).send("Invoice not found or error occurred.");
+      }
+  });
+}
