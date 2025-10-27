@@ -6,7 +6,7 @@ import path from "path";
 // 1. Get the current file path (fileURL)
 const __filename = fileURLToPath(import.meta.url);
 // 2. Get the directory name from the file path
-const __dirname = path.dirname(__filename);
+export const __dirname = path.dirname(__filename);
 
 
 // Ensure uploads directory exists

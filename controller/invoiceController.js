@@ -63,7 +63,7 @@ export const getInvoice = async (req, res) => {
     if (status == "-1") {
       res.status(404).json({ error: "Please Select a Status" });
     }
-    if (status) {
+    if (status && status !== "2") {
       filter["summary.status"] = status;
     }
 
