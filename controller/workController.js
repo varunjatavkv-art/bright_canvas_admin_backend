@@ -37,8 +37,22 @@ export const addWork = async (req, res) => {
 
 export const getWork = async (req, res) => {
   try {
-    const works = await Work.find().sort({ created_at: -1 });
-    res.json(works);
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const totalCounts = await Work.countDocuments();
+
+    const works = await Work.find().skip(skip).limit(limit).sort({ created_at: -1 });
+    res.json(
+      {
+        totalCounts: totalCounts,
+      data: works
+    }
+
+    );
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
