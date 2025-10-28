@@ -41,23 +41,10 @@ export const getBlogs = async (req, res) => {
     // set skip to skip the data on every page change
     const skip = (page - 1) * limit;
 
-    const searchQuery = req.query.search || "";
-
-
-    let match = {};
-
-    if(searchQuery){
-      const searchRegex = new RegExp(searchQuery, 'i');
-
-      match = {
-        $or: [
-          {"title": searchRegex}
-        ]
-      }
-    }
+    
     // fetch data from datamodel using skip and limit
-    const posts = await Post.find(match).skip(skip).limit(limit);
-    const totalCounts = await Post.countDocuments(match);
+    const posts = await Post.find().skip(skip).limit(limit);
+    const totalCounts = await Post.countDocuments();
     res.json({
       totalCounts: parseInt(totalCounts),
       data: posts,
