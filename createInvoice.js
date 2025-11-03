@@ -26,6 +26,8 @@ const getStatusText = (status) => {
 // --- 5. MAIN INVOCATION FUNCTION ---
 // ----------------------------------------------------------------------
 export function createInvoice(invoice, path) {
+    console.log(invoice);
+    
     let doc = new PDFDocument({ margin: MARGIN });
     doc.pipe(fs.createWriteStream(path));
     drawInvoiceContent(doc, invoice); 
@@ -132,6 +134,7 @@ function generateCustomerInfo(doc, startY ,invoice) {
 
 // ----------------------------------------------------------------------
 function generateInvoiceTable(doc, startY, invoice) {
+   
     let currentY = startY;
     const HEADER_Y = currentY;
     const LINE_HEIGHT = 20;

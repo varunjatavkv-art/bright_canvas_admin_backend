@@ -4,30 +4,32 @@ import { createInvoice } from "../createInvoice.js";
 import { invoice } from "../models/invoice.js";
 import fs from "fs";
 
-
 // 1. Get the current file path (fileURL)
 const __filename = fileURLToPath(import.meta.url);
 // 2. Get the directory name from the file path
 const __dirname = path.dirname(__filename);
-
 
 export const INVOICE_DIR = path.join(__dirname, "../invoice_pdf");
 if (!fs.existsSync(INVOICE_DIR)) fs.mkdirSync(INVOICE_DIR, { recursive: true });
 
 export const addInvoice = async (req, res) => {
   try {
-    if(req.body.summary.status === "-1"){
-      return res.status(400).json({error: "Please choose valid status"})
+    if (req.body.summary.status === "-1") {
+      return res.status(400).json({ error: "Please choose valid status" });
     }
-  const hasInvalidUnit = req.body.items.some(item => item.unit === "-1");
+    const hasInvalidUnit = req.body.items.some((item) => item.unit === "-1");
 
-  if (hasInvalidUnit) {
-      return res.status(400).json({ error: "Please choose valid unit for all items" });
-  }
-  
-  if (!req.body.items || req.body.items.length === 0) {
-      return res.status(400).json({ error: "Invoice must contain at least one item" });
-  }
+    if (hasInvalidUnit) {
+      return res
+        .status(400)
+        .json({ error: "Please choose valid unit for all items" });
+    }
+
+    if (!req.body.items || req.body.items.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Invoice must contain at least one item" });
+    }
     const doc = await invoice.create(req.body);
     res.status(201).json(doc);
   } catch (error) {
@@ -110,10 +112,9 @@ export const getSingleInvoice = async (req, res) => {
     if (!result) {
       console.log("Invoice not found");
       return res.status(404).json({ error: "No single Invoice is found" });
-    };
-    createInvoice(result,`./invoice_pdf/invoice_${result?.metadata?.invoiceNumber}.pdf`)
+    }
+    // createInvoice(result,`./invoice_pdf/invoice_${result?.metadata?.invoiceNumber}.pdf`)
     res.status(200).json({ message: "Got single Invoice", data: result });
-   
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -125,7 +126,7 @@ export const updateInvoice = async (req, res) => {
     // 1. Create the new item object from the request body
 
     const updatedItemsArray = req.body.items;
-    
+
     const newCustomer = {
       name: req.body.customer.name,
       address: req.body.customer.address,
@@ -172,16 +173,28 @@ export const updateInvoice = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-export const downloadInvoice = (req, res) => {
-  const fileName = req.params.filename;
-  const filePath = path.join(INVOICE_DIR, fileName);
+export const downloadInvoice = async (req, res) => {
+  try {
+    const fileName = req.params.filename;
+    const filePath = path.join(INVOICE_DIR, fileName);
 
-  // CRITICAL FIX: Set Content-Disposition header to 'attachment'
-  res.download(filePath, (err) => {
+    const result = await invoice.findOne({ _id: req.query.id });
+    if (!result) {
+      console.log("Invoice not found");
+      return res.status(404).json({ error: "No single Invoice is found" });
+    }
+
+    await createInvoice(result, filePath);
+
+    // Then send it to client
+    res.download(filePath, (err) => {
       if (err) {
-          // Handle error, file might not exist
-          console.error("Error downloading file:", err);
-          res.status(404).send("Invoice not found or error occurred.");
+        console.error("Error downloading file:", err);
+        return res.status(404).send("Invoice not found or error occurred.");
       }
-  });
-}
+    });
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).send("Internal server error");
+  }
+};
