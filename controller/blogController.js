@@ -77,3 +77,32 @@ export const deleteBlog = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const updateBlog = async(req,res) => {
+  const {title, description} = req.body;
+  try {
+    const id = req.params.id;
+    const updatedAt = new Date();
+    if (!req.file && !req.file.path) {
+      return res
+        .status(400)
+        .json({ error: "image is required and must be jpg/jpeg/png" });
+    }
+    const imagePath = path.relative(__dirname, req.file.path);
+    const result = await Post.updateOne(
+      {_id: id},
+      {
+        $set: {
+          title: title,
+          description: description,
+          image_path: imagePath,
+          updated_at: updatedAt
+        }
+      }
+    );
+
+    res.status(200).json({result, message: "Blog Updated Succesfully!!"});
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}

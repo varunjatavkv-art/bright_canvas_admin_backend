@@ -26,9 +26,6 @@ const invoiceSchema = mongoose.Schema({
             serial: {
                 type: Number, required: true, default: 1
             },
-            unit: {
-                type: String, required: true, default: "-1"
-            },
             unitPrice: {
                 type: Number, required: true, default: 0
             },
