@@ -79,9 +79,14 @@ export const deleteBlog = async (req, res) => {
 };
 
 export const updateBlog = async(req,res) => {
-  const {title, description} = req.body;
+
+  
   try {
+    const {title, description} = req.body;
+    // console.log(title, description);
     const id = req.params.id;
+
+    
     const updatedAt = new Date();
     if (!req.file && !req.file.path) {
       return res
@@ -89,6 +94,8 @@ export const updateBlog = async(req,res) => {
         .json({ error: "image is required and must be jpg/jpeg/png" });
     }
     const imagePath = path.relative(__dirname, req.file.path);
+  
+    
     const result = await Post.updateOne(
       {_id: id},
       {

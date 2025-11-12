@@ -8,6 +8,6 @@ blogRouter.post("", upload.single("image"), addBlogs, multer_error);
 blogRouter.get("", getBlogs)
 blogRouter.get("/:id", getSingleBlog);
 blogRouter.delete("/:id", deleteBlog);
-blogRouter.delete("/:id", updateBlog);
+blogRouter.put("/update/:id", upload.single("image"), updateBlog);
 
 export default blogRouter;
