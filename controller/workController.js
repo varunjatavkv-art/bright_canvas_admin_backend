@@ -81,3 +81,40 @@ export const deleteWork = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   }
+
+  export const updateWork = async(req,res) => {
+    try {
+      const {title, description, service} = req.body;
+      // console.log(title, description, service);
+      const id = req.params.id;
+  
+      // console.log("id: ", id);
+      
+      const updatedAt = new Date();
+      if (!req.file && !req.file.path) {
+        return res
+          .status(400)
+          .json({ error: "image is required and must be jpg/jpeg/png" });
+      }
+      const imagePath = path.relative(__dirname, req.file.path);
+      // console.log("image path: ", imagePath);
+      
+      
+      const result = await Work.updateOne(
+        {_id: id},
+        {
+          $set: {
+            title: title,
+            description: description,
+            service: service,
+            image_path: imagePath,
+            updated_at: updatedAt
+          }
+        }
+      );
+  
+      res.status(200).json({result, message: "Blog Updated Succesfully!!"});
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }

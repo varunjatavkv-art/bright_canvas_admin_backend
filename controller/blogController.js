@@ -79,8 +79,6 @@ export const deleteBlog = async (req, res) => {
 };
 
 export const updateBlog = async(req,res) => {
-
-  
   try {
     const {title, description} = req.body;
     // console.log(title, description);
