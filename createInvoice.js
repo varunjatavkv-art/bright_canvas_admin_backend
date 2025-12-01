@@ -1,7 +1,11 @@
 import fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { formatDate } from './commonFunction/common.functions.js';
+import path from 'path'; 
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // --- CONSTANTS & HELPERS ---
 const MARGIN = 50;
 const PAGE_WIDTH = 612; // A4 width in points
@@ -9,32 +13,40 @@ const CONTENT_WIDTH = PAGE_WIDTH - (2 * MARGIN); // 512
 const TEXT_COLOR = '#2e2e2e';
 const CURRENCY_SYMBOL = ''; 
 
+const LOGO_PATH = path.join(__dirname, '..','backend', 'assets', 'images', 'logo', 'Logo BLACK.png'); 
+
+const LOGO_WIDTH = 100; 
+const LOGO_HEIGHT = 50; 
+
 // Helper to format currency
 const formatCurrency = (amount) => {
-    // Safely convert to a number, stripping non-numeric chars except '.'
     const num = Number(String(amount).replace(/[^0-9.]/g, '')) || 0;
     return `${CURRENCY_SYMBOL}${num.toFixed(2)}`; 
 };
 
-// Helper for status text
+
 const getStatusText = (status) => {
     return status === "0" ? "Pending" : (status === "1" ? "Paid" : "N/A");
 };
 
 
-// ----------------------------------------------------------------------
-// --- 5. MAIN INVOCATION FUNCTION ---
-// ----------------------------------------------------------------------
 export function createInvoice(invoice, path) {
-    console.log(invoice);
-    
     let doc = new PDFDocument({ margin: MARGIN });
     doc.pipe(fs.createWriteStream(path));
-    drawInvoiceContent(doc, invoice); 
-    doc.end();
+    
+    try {
+        drawInvoiceContent(doc, invoice); 
+
+    } catch (error) {
+        console.error(`CRITICAL PDF CRASH: Generation failed for invoice.`, error.message);
+        doc.text('ERROR: Invoice rendering failed. See server logs.', 50, 50);
+
+    } finally {
+        doc.end();
+    }
 }
 
-// --- HELPER FUNCTION: Main Content Drawer ---
+
 function drawInvoiceContent(doc, invoice) {
     let currentY = MARGIN; 
     
@@ -47,44 +59,55 @@ function drawInvoiceContent(doc, invoice) {
     generateTotals(doc, currentY, invoice);
 }
 
-// ----------------------------------------------------------------------
-// --- 1. HEADER SECTION (Fixed Company Text Overrun) ---
-// ----------------------------------------------------------------------
 function generateHeader(doc, startY, invoice) {
     let currentY = startY; 
     const rightX = MARGIN + CONTENT_WIDTH;
-    
-    // FIX: Increased horizontal adjustment to prevent text overrun
     const RIGHT_ADJUSTMENT = 120; 
 
-    // DYNAMIC INVOICE ID
+    try {
+        doc.image(LOGO_PATH,  rightX - RIGHT_ADJUSTMENT, startY, { 
+            width: LOGO_WIDTH, 
+            height: LOGO_HEIGHT 
+        });
+        
+        currentY = startY + LOGO_HEIGHT + 10;
+
+    } catch (e) {
+        console.error("Error loading logo image:", e);
+        currentY = startY + 20; 
+    }
+    
+    doc.fontSize(10)
+        .font('Helvetica')
+        .text('Bright Canvas', rightX - RIGHT_ADJUSTMENT, currentY, { align: 'left' })
+        .text('bright.canvas@gmail.com, +1 543 2198', rightX - RIGHT_ADJUSTMENT, currentY + 15, { align: 'left' });
+
     const invoiceNum = invoice?.metadata?.invoiceNumber || invoice?._id?.toString().substring(0, 8) || 'N/A';
+
+    let contentStartBelowLogoY = startY; 
+    let contentStartBelowLogoY2 = currentY; 
+    
     doc.fontSize(16)
        .font('Helvetica-Bold')
-       .text(`Invoice #${invoiceNum}`, MARGIN, currentY);
+       .text(`Invoice #${invoiceNum}`, MARGIN, contentStartBelowLogoY);
 
-    currentY += 20;
+    contentStartBelowLogoY += 20;
+    contentStartBelowLogoY2 += 20;
 
-    // DYNAMIC DATES
     doc.fontSize(10)
        .font('Helvetica')
-       .text(`Date Issued: ${formatDate(invoice?.metadata?.issueDate) || 'N/A'}`, MARGIN, currentY)
-       .text(`Date Due: ${formatDate(invoice?.metadata?.dueDate) || 'N/A'}`, MARGIN, currentY + 15);
+       .text(`Date Issued: ${formatDate(invoice?.metadata?.issueDate) || 'N/A'}`, MARGIN, contentStartBelowLogoY)
+       .text(`Date Due: ${formatDate(invoice?.metadata?.dueDate) || 'N/A'}`, MARGIN, contentStartBelowLogoY + 15);
     
-    // --- RIGHT SIDE: Company Info (FIXED POSITION) ---
-    doc.fontSize(10)
-       // The x-position (rightX - RIGHT_ADJUSTMENT) pulls the right edge of the text 20 points left.
-       .text('Bright Canvas', rightX - RIGHT_ADJUSTMENT, startY, { align: 'right' })
-       .text('bright.canvas@gmail.com, +1 543 2198', rightX - RIGHT_ADJUSTMENT, startY + 15, { align: 'right' });
-
-    currentY += 40;
+    let finalY = Math.max(contentStartBelowLogoY2 + 35, startY + 40); 
+    
     doc.strokeColor("#aaaaaa")
        .lineWidth(1)
-       .moveTo(MARGIN, currentY)
-       .lineTo(rightX, currentY)
+       .moveTo(MARGIN, finalY)
+       .lineTo(rightX, finalY)
        .stroke();
     
-    return currentY + 20;
+    return finalY + 20;
 }
 
 // ----------------------------------------------------------------------
@@ -117,10 +140,10 @@ function generateCustomerInfo(doc, startY ,invoice) {
     doc.text(getStatusText(invoice?.summary?.status), RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY);
 
     doc.text('Order ID:', RIGHT_COL_X, rightY + LINE_HEIGHT);
-    doc.text(invoice?.metadata?.orderID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + LINE_HEIGHT);
+    doc.text("#"+invoice?.metadata?.orderID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + LINE_HEIGHT);
 
     doc.text('Shipment ID:', RIGHT_COL_X, rightY + (LINE_HEIGHT * 2));
-    doc.text(invoice?.metadata?.shipmentID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + (LINE_HEIGHT * 2));
+    doc.text('#'+invoice?.metadata?.shipmentID || 'N/A', RIGHT_COL_X + RIGHT_VALUE_OFFSET, rightY + (LINE_HEIGHT * 2));
 
     currentY += (LINE_HEIGHT * 3) + 20; 
     doc.strokeColor("#aaaaaa")
@@ -172,10 +195,10 @@ function generateInvoiceTable(doc, startY, invoice) {
         const lineItemTotal = formatCurrency(unitPriceNum * qtyNum); 
 
         // Use optional chaining for individual item properties
-        doc.text(item?.serial || 'N/A', columns.SL, currentY);
-        doc.text(item?.description || 'N/A', columns.Items, currentY);
+        doc.text(item?.serial, columns.SL, currentY);
+        doc.text(item?.description, columns.Items, currentY);
         doc.text(item?.qty || '0', columns.Qty, currentY, { width: PRICE_WIDTH, align: 'right' });
-        doc.text(item?.unit || 'N/A', columns.Units, currentY);
+        doc.text(item?.unit, columns.Units, currentY);
         
         // Format Unit Price for display
         doc.text(formatCurrency(item?.unitPrice), columns.UnitPrice, currentY, { width: PRICE_WIDTH, align: 'right' });

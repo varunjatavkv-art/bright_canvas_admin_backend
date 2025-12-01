@@ -107,7 +107,7 @@ export const getSingleInvoice = async (req, res) => {
       console.log("Invoice not found");
       return res.status(404).json({ error: "No single Invoice is found" });
     }
-    // createInvoice(result,`./invoice_pdf/invoice_${result?.metadata?.invoiceNumber}.pdf`)
+    createInvoice(result,`./invoice_pdf/invoice_${result?.metadata?.invoiceNumber}.pdf`)
     res.status(200).json({ message: "Got single Invoice", data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -177,8 +177,6 @@ export const downloadInvoice = async (req, res) => {
       console.log("Invoice not found");
       return res.status(404).json({ error: "No single Invoice is found" });
     }
-
-    await createInvoice(result, filePath);
 
     // Then send it to client
     res.download(filePath, (err) => {
