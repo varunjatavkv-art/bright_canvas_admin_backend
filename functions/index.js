@@ -7,7 +7,7 @@ import {onRequest} from "firebase-functions/v2/https";
 import {setGlobalOptions} from "firebase-functions/v2";
 // Note: We are keeping the logger import, but if your linter flags it as unused, 
 // you can safely remove the next line if you don't use it globally here.
-import logger from "firebase-functions/logger"; 
+import {logger} from "firebase-functions/logger"; 
 
 // Set global options for performance and cost control
 setGlobalOptions({maxInstances: 10});
@@ -18,7 +18,7 @@ import app from "../server.js";
 
 // --- Export the Express App as a Single HTTP Function ---
 // The function name will be 'api' (e.g., your-project-id.cloudfunctions.net/api)
-exports.api = onRequest(
+export const api = onRequest(
     // OPTIMIZATION: Set memory lower if 256MB is too much.
     // The default is 256 MiB. Try 128 MiB for a very light API.
     {

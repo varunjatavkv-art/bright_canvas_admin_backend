@@ -16,9 +16,13 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.1",
     "mongoose": "^7.5.1",
-    "multer": "^1.4.5-lts.1",
-    "nodemon": "^3.1.10",
+    "multer": "^2.0.2",
     "pdfkit": "^0.17.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
