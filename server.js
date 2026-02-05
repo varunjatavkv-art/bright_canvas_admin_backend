@@ -1,3 +1,4 @@
+import 'dotenv/config'; 
 import express from "express";
 import { db } from "./db.js";
 import cors from "cors";
@@ -9,6 +10,7 @@ import workRouter from "./routes/workRouter.js";
 import { WORK_DIR } from "./multer/work_multer.js";
 import { UPLOAD_DIR } from "./multer/blog_multer.js";
 import { INVOICE_DIR } from "./controller/invoiceController.js";
+import { verifyN8nSecret } from "./middleware/verifyN8NSecret.js";
 
 const PORT = 8000;
 // initializeApp(); 
@@ -35,13 +37,11 @@ app.use("/uploads/posts", express.static(UPLOAD_DIR));
 app.use("/uploads/work", express.static(WORK_DIR));
 app.use("/invoice_pdf", express.static(INVOICE_DIR));
 
-app.use("/api/blogs", blogRouter);
+// app.use("/api/blogs", blogRouter);
 app.use("/api/work", workRouter);
 app.use("/api/invoice", InvoiceRouter);
 
-app.use("/api", (req,res) => {
- res.send("<h1>Hello World</h1>")
-})
+app.use("/api/webhooks/n8n/blog-ingest", verifyN8nSecret, blogRouter);
 
 db.connectWithRetry();
 app.listen(PORT, ()=> {

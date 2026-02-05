@@ -1,35 +1,40 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { Post } from "../models/post.js";
+import { Blog } from "../models/blog.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const addBlogs = async (req, res) => {
-  try {
-    const { title, description } = req.body;
-    if (!title) {
-      return res.status(400).json({ error: "title is required" });
-    }
-    if (!req.file && !req.file.path) {
-      return res
-        .status(400)
-        .json({ error: "image is required and must be jpg/jpeg/png" });
-    }
-    const imagePath = path.relative(__dirname, req.file.path);
-    const createdAt = new Date();
-
-    const doc = await Post.create({
-      title,
-      description: description || "",
-      image_path: imagePath,
-      created_at: createdAt,
-    });
-
-    res.status(201).json(doc);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+export const addBlogs = async (req, res) => { 
+  try { 
+    const { title, content, imageUrl, tags } = req.body; 
+ 
+    // Basic validation (Zod/Joi recommended) 
+    if (!title || !content) { 
+      return res.status(400).json({ error: 'Missing required fields' }); 
+    } 
+ 
+    const newPost = new Blog({ 
+      title, 
+      content, 
+      imageUrl, 
+      tags, 
+      status: 'draft' // Explicit safeguard 
+    }); 
+ 
+    const savedPost = await newPost.save(); 
+ 
+    console.log(`[Content] New draft ingested: ${savedPost._id}`); 
+ 
+    res.status(201).json({ 
+      success: true, 
+      id: savedPost._id 
+    }); 
+ 
+  } catch (error) { 
+    console.error('Webhook Error:', error); 
+    res.status(500).json({ error: 'Internal Server Error' }); 
+  } 
 };
 
 export const getBlogs = async (req, res) => {
@@ -43,11 +48,11 @@ export const getBlogs = async (req, res) => {
 
     
     // fetch data from datamodel using skip and limit
-    const posts = await Post.find().skip(skip).limit(limit);
-    const totalCounts = await Post.countDocuments();
+    const blogs = await Blog.find().skip(skip).limit(limit);
+    const totalCounts = await Blog.countDocuments();
     res.json({
       totalCounts: parseInt(totalCounts),
-      data: posts,
+      data: blogs,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -56,11 +61,11 @@ export const getBlogs = async (req, res) => {
 
 export const getSingleBlog = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
       return res.status(404).json({ error: "Post not found" });
     }
-    res.json(post);
+    res.json(blog);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
