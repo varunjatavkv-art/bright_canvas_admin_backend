@@ -11,6 +11,7 @@ import { WORK_DIR } from "./multer/work_multer.js";
 import { UPLOAD_DIR } from "./multer/blog_multer.js";
 import { INVOICE_DIR } from "./controller/invoiceController.js";
 import { verifyN8nSecret } from "./middleware/verifyN8NSecret.js";
+import { getBlogs } from './controller/blogController.js';
 
 const PORT = 8000;
 // initializeApp(); 
@@ -41,7 +42,8 @@ app.use("/invoice_pdf", express.static(INVOICE_DIR));
 app.use("/api/work", workRouter);
 app.use("/api/invoice", InvoiceRouter);
 
-app.use("/api/webhooks/n8n/blog-ingest", verifyN8nSecret, blogRouter);
+app.use("/api/webhooks/n8n/blog-ingest", blogRouter);
+app.get('/api/blogs', getBlogs)
 
 db.connectWithRetry();
 app.listen(PORT, ()=> {

@@ -37,27 +37,46 @@ export const addBlogs = async (req, res) => {
   } 
 };
 
-export const getBlogs = async (req, res) => {
-  try {
-    // take page no and limit from req query
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+// export const getBlogs = async (req, res) => {
+//   try {
+//     // take page no and limit from req query
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
 
-    // set skip to skip the data on every page change
-    const skip = (page - 1) * limit;
+//     // set skip to skip the data on every page change
+//     const skip = (page - 1) * limit;
 
     
-    // fetch data from datamodel using skip and limit
-    const blogs = await Blog.find().skip(skip).limit(limit);
+//     // fetch data from datamodel using skip and limit
+//     const blogs = await Blog.find().skip(skip).limit(limit);
+//     const totalCounts = await Blog.countDocuments();
+//     res.json({
+//       totalCounts: parseInt(totalCounts),
+//       data: blogs,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+ 
+// };
+
+export const getBlogs = async (req, res) => {
+  try {
+    // Filter by status if provided in query params (e.g., ?status=draft)
+    const { status } = req.query;
+    const query = status ? { status } : {};
+    const blogs = await Blog.find(query).sort({ createdAt: -1 });
     const totalCounts = await Blog.countDocuments();
-    res.json({
-      totalCounts: parseInt(totalCounts),
+    res.status(200).json({
+      success: true,
       data: blogs,
+      totalCounts: parseInt(totalCounts),
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+} catch (error) {
+    res.status(500).json({ error: 'Failed to fetch blogs' });
+}
+}
+
 
 export const getSingleBlog = async (req, res) => {
   try {
